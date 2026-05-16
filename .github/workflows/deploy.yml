@@ -56,6 +56,19 @@ jobs:
     environment: production
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: docker-compose.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -67,11 +80,17 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
 
+            # Write .env from secrets if it doesn't exist yet
+            if [ ! -f .env ]; then
+              echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+              echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
+            fi
+
             # Pull new image
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-            # Swap and restart (zero-downtime)
+            # Swap and restart
             IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }} \
               docker compose up -d --no-build --pull never
 
