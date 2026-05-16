@@ -111,11 +111,9 @@ export default function ThemesOverlay({ open, onClose }) {
 
         <div style={{
           ...T.caption, color: 'rgba(247,245,240,0.35)',
-          display: 'flex', justifyContent: 'space-between',
-          marginTop: 32, flexWrap: 'wrap', gap: 8,
+          marginTop: 32,
         }}>
-          <span>ESC · <L ru="закрыть" en="close" /></span>
-          <span><L ru="С. Николаев · Архив 2024–2026" en="S. Nikolaev · Archive 2024–2026" /></span>
+          <span>А. Лычман</span>
         </div>
       </div>
     </div>
