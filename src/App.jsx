@@ -9,9 +9,9 @@ import AdminPhotos from './pages/admin/AdminPhotos.jsx';
 import AdminThemes from './pages/admin/AdminThemes.jsx';
 import AdminUpload from './pages/admin/AdminUpload.jsx';
 
-function ThemePageRoute({ toggleDark, dark }) {
+function ThemePageRoute({ toggleDark, dark, toggleLang }) {
   const { slug } = useParams();
-  return <ThemePage slug={slug} toggleDark={toggleDark} dark={dark} />;
+  return <ThemePage slug={slug} toggleDark={toggleDark} dark={dark} toggleLang={toggleLang} />;
 }
 
 export default function App() {
@@ -34,7 +34,7 @@ export default function App() {
     <LangCtx.Provider value={lang}>
       <Routes>
         <Route path="/" element={<Home toggleLang={toggleLang} toggleDark={toggleDark} dark={dark} />} />
-        <Route path="/themes/:slug" element={<ThemePageRoute toggleDark={toggleDark} dark={dark} />} />
+        <Route path="/themes/:slug" element={<ThemePageRoute toggleDark={toggleDark} dark={dark} toggleLang={toggleLang} />} />
         <Route path="/admin" element={<AdminLayout lang={lang} toggleLang={toggleLang} toggleDark={toggleDark} dark={dark} />}>
           <Route index element={<AdminDashboard />} />
           <Route path="photos" element={<AdminPhotos />} />

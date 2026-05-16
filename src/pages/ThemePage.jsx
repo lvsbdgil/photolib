@@ -43,7 +43,7 @@ function PhotoTile({ photo, onClick }) {
   );
 }
 
-export default function ThemePage({ slug, toggleDark, dark }) {
+export default function ThemePage({ slug, toggleDark, dark, toggleLang }) {
   const navigate = useNavigate();
   const lang = useLang();
   const [theme, setTheme] = useState(null);
@@ -78,7 +78,7 @@ export default function ThemePage({ slug, toggleDark, dark }) {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--paper)', display: 'flex', flexDirection: 'column' }}>
-      <Header onMenu={() => setOverlayOpen(true)} toggleDark={toggleDark} dark={dark} />
+      <Header onMenu={() => setOverlayOpen(true)} toggleDark={toggleDark} dark={dark} toggleLang={toggleLang} />
 
       <div style={{ flex: 1 }}>
         {/* Title */}
