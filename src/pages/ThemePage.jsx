@@ -28,8 +28,9 @@ function PhotoTile({ photo, onClick }) {
       }}
     >
       <img
-        src={photoUrl(photo, 'thumb')}
+        src={photoUrl(photo)}
         alt=""
+        loading="lazy"
         onLoad={() => setLoaded(true)}
         style={{
           width: '100%', height: '100%',
