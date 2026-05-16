@@ -130,12 +130,6 @@ export default function Home({ toggleLang, toggleDark, dark }) {
         <span style={{ ...T.caption, color: 'rgba(247,245,240,0.7)' }}>
           {String(idx + 1).padStart(3, '0')} / {String(photos.length).padStart(3, '0')}
         </span>
-        <span style={{ ...T.label, fontSize: 9, color: 'rgba(247,245,240,0.5)', display: isMobile ? 'none' : 'block' }}>
-          <L ru="КЛИК — СЛЕДУЮЩЕЕ" en="CLICK — NEXT" />
-        </span>
-        <span style={{ ...T.caption, color: 'rgba(247,245,240,0.5)' }}>
-          {photo.original_name || photo.id}
-        </span>
       </div>
 
       {/* Dark/light toggle — bottom right corner */}

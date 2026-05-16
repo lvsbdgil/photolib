@@ -28,12 +28,13 @@ export default function AdminLayout({ toggleLang, toggleDark, dark }) {
     <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--paper)', color: 'var(--ink)' }}>
       {/* Top bar */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
         padding: 'clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px)',
         borderBottom: '1px solid var(--faint)',
         flexShrink: 0,
-        flexWrap: 'wrap', gap: 8,
       }}>
+        <div />
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
             onClick={() => navigate('/')}
@@ -44,7 +45,7 @@ export default function AdminLayout({ toggleLang, toggleDark, dark }) {
           <span style={{ ...T.caption, color: 'var(--dim)' }}>/ ADMIN</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
           <button
             type="button"
             onClick={toggleDark}

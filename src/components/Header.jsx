@@ -11,9 +11,9 @@ export default function Header({ variant = 'solid', onMenu, showLangToggle = tru
 
   return (
     <header style={{
-      display: 'flex',
+      display: 'grid',
+      gridTemplateColumns: '1fr auto 1fr',
       alignItems: 'center',
-      justifyContent: 'space-between',
       padding: 'clamp(14px, 3vw, 20px) clamp(16px, 4vw, 28px)',
       position: isOverlay ? 'absolute' : 'relative',
       top: 0, left: 0, right: 0,
@@ -49,7 +49,7 @@ export default function Header({ variant = 'solid', onMenu, showLangToggle = tru
         PHOTOLIB<span style={{ color: 'var(--accent)' }}>.</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
         {showLangToggle && toggleLang && (
           <button
             type="button"
