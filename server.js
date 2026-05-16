@@ -172,7 +172,11 @@ if (themeCount === 0) {
 // ── Uploads ───────────────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Content-Disposition', 'inline');
+  next();
+}, express.static(uploadsDir));
 
 const upload = multer({
   storage: multer.memoryStorage(),

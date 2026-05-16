@@ -18,6 +18,14 @@ html.dark {
 
 *, *::before, *::after { box-sizing: border-box; }
 
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+
 html, body {
   margin: 0;
   padding: 0;

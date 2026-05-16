@@ -93,19 +93,20 @@ export default function Home({ toggleLang, toggleDark, dark }) {
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', background: '#0e0c0a', overflow: 'hidden' }}>
+    <div
+      onClick={cycle}
+      style={{ position: 'relative', width: '100%', height: '100vh', background: '#0e0c0a', overflow: 'hidden', cursor: 'pointer' }}
+    >
       {/* Photo */}
       <img
         key={photo.id}
         src={photoUrl(photo)}
         alt=""
-        onClick={cycle}
         onLoad={() => setLoaded(true)}
         style={{
           position: 'absolute', inset: 0,
           width: '100%', height: '100%',
           objectFit: 'cover',
-          cursor: 'pointer',
           animation: 'photoIn 0.6s ease-out',
           opacity: loaded ? 1 : 0,
           transition: 'opacity 0.4s',
