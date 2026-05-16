@@ -12,6 +12,9 @@ services:
     volumes:
       - photolib_data:/app/data
       - photolib_uploads:/app/uploads
+    networks:
+      - default
+      - proxy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/auth/me').then(r => process.exit(r.ok ? 0 : 1))"]
       interval: 30s
@@ -22,3 +25,7 @@ services:
 volumes:
   photolib_data:
   photolib_uploads:
+
+networks:
+  proxy:
+    external: true
