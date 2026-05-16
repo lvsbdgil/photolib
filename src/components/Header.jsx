@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { T, Icon, useLang } from '../ui.jsx';
 
-export default function Header({ variant = 'solid', onMenu, showLangToggle = true, toggleLang }) {
+export default function Header({ variant = 'solid', onMenu, showLangToggle = true, toggleLang, toggleDark, dark }) {
   const navigate = useNavigate();
   const lang = useLang();
   const isOverlay = variant === 'overlay';
@@ -62,6 +62,23 @@ export default function Header({ variant = 'solid', onMenu, showLangToggle = tru
             }}
           >
             {lang === 'ru' ? 'RU/EN' : 'EN/RU'}
+          </button>
+        )}
+        {toggleDark && (
+          <button
+            type="button"
+            onClick={toggleDark}
+            style={{
+              width: 36, height: 36,
+              background: 'transparent',
+              border: `1px solid ${borderColor}`,
+              color: fg,
+              cursor: 'pointer', padding: 0,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, flexShrink: 0,
+            }}
+          >
+            {dark ? '☀' : '◑'}
           </button>
         )}
       </div>

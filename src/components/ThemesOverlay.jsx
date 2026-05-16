@@ -111,8 +111,19 @@ export default function ThemesOverlay({ open, onClose }) {
 
         <div style={{
           ...T.caption, color: 'rgba(247,245,240,0.35)',
-          marginTop: 32,
+          display: 'flex', justifyContent: 'space-between',
+          marginTop: 32, flexWrap: 'wrap', gap: 8,
         }}>
+          <a
+            href="https://t.me/Alexander_Lych"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', textDecoration: 'none' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'rgba(247,245,240,0.7)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(247,245,240,0.35)'}
+          >
+            @Alexander_Lych
+          </a>
           <span>А. Лычман</span>
         </div>
       </div>
