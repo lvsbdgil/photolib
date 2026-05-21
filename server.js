@@ -361,6 +361,23 @@ app.get('/u/script.js', async (_req, res) => {
   } catch { res.status(503).send(''); }
 });
 
+// Forward tracking beacons from the browser to Umami
+app.post('/api/send', async (req, res) => {
+  try {
+    const r = await fetch(`${UMAMI_URL}/api/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': req.headers['user-agent'] || '',
+        'X-Forwarded-For': req.headers['x-forwarded-for'] || req.ip,
+      },
+      body: JSON.stringify(req.body),
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch { res.status(503).json({}); }
+});
+
 app.get('/api/analytics', requireAuth, async (_req, res) => {
   if (!UMAMI_SITE_ID || !UMAMI_ADMIN_PASS) return res.json(null);
   const tok = await umamiToken();
