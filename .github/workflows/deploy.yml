@@ -86,9 +86,10 @@ jobs:
               echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" >> .env
             fi
 
-            # Pull new image
+            # Pull photolib image and any new service images (postgres, umami, etc.)
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+            IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }} \
+              docker compose pull --quiet
 
             # Swap and restart
             IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }} \
