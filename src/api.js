@@ -61,6 +61,8 @@ export const authMe = () => req('/auth/me');
 // ── Stats ─────────────────────────────────────────────────────────────────────
 export const getStats = () => req('/stats');
 
+export const getAnalytics = () => req('/analytics').catch(() => null);
+
 export const trackEvent = (event) =>
   req('/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event }) }).catch(() => {});
 

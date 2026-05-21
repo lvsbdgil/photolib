@@ -9,12 +9,18 @@ services:
       - NODE_ENV=production
       - SESSION_SECRET=${SESSION_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - UMAMI_SITE_ID=${UMAMI_SITE_ID}
+      - UMAMI_ADMIN_PASSWORD=${UMAMI_ADMIN_PASSWORD}
+      - UMAMI_URL=http://umami:3000
     volumes:
       - photolib_data:/app/data
       - photolib_uploads:/app/uploads
     networks:
       - default
       - proxy
+    depends_on:
+      umami:
+        condition: service_started
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/auth/me').then(r => process.exit(r.ok ? 0 : 1))"]
       interval: 30s
@@ -22,9 +28,40 @@ services:
       retries: 3
       start_period: 10s
 
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-umami}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    networks:
+      - default
+      - proxy
+
+  umami-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:-umami}
+    volumes:
+      - umami_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
 volumes:
   photolib_data:
   photolib_uploads:
+  umami_db:
 
 networks:
   proxy:

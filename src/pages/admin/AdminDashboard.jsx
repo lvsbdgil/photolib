@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { T, L, useLang, Icon, Btn } from '../../ui.jsx';
-import { getStats, getPhotos, photoUrl } from '../../api.js';
+import { T, L, useLang, Icon } from '../../ui.jsx';
+import { getStats, getPhotos, getAnalytics, photoUrl } from '../../api.js';
 
-function StatCard({ label, value, delta }) {
+function StatCard({ label, value }) {
   return (
     <div style={{ padding: 'clamp(14px,3vw,22px)', background: 'var(--paper)' }}>
       <div style={{ ...T.label, color: 'var(--dim)', marginBottom: 12 }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ ...T.display, fontSize: 'clamp(26px,4vw,38px)', lineHeight: 1 }}>{value}</span>
-        {delta && <span style={{ ...T.caption, color: 'var(--accent)' }}>{delta}</span>}
-      </div>
+      <span style={{ ...T.display, fontSize: 'clamp(26px,4vw,38px)', lineHeight: 1 }}>{value}</span>
+    </div>
+  );
+}
+
+function MiniChart({ data, lang }) {
+  if (!data?.length) return null;
+  const max = Math.max(...data.map(d => d.y), 1);
+  const dayLabels = {
+    ru: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
+    en: ['Su','Mo','Tu','We','Th','Fr','Sa'],
+  };
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 64, marginTop: 16 }}>
+      {data.map((d, i) => {
+        const date = new Date(d.t);
+        const dayName = dayLabels[lang]?.[date.getUTCDay()] ?? '';
+        const barH = Math.max(Math.round((d.y / max) * 44), d.y > 0 ? 3 : 0);
+        return (
+          <div key={i} title={`${dayName}: ${d.y}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: '100%', height: barH, background: 'var(--accent)', opacity: 0.75 }} />
+            <span style={{ ...T.mono, fontSize: 9, color: 'var(--dim)', letterSpacing: 0 }}>{dayName}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -47,19 +68,23 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const lang = useLang();
   const [stats, setStats] = useState({ totalPhotos: 0, totalThemes: 0 });
+  const [analytics, setAnalytics] = useState(undefined); // undefined = loading, null = unavailable
   const [recent, setRecent] = useState([]);
 
   useEffect(() => {
     getStats().then(setStats);
     getPhotos({ limit: 8 }).then(setRecent);
+    getAnalytics().then(setAnalytics);
   }, []);
 
   const statCards = [
-    { ru: 'Фото',         en: 'Photos',        value: String(stats.totalPhotos).padStart(3, '0') },
-    { ru: 'Тем',          en: 'Themes',         value: String(stats.totalThemes).padStart(2, '0') },
-    { ru: 'Загружено',    en: 'Uploads',        value: String(stats.totalUploads || 0).padStart(3, '0') },
-    { ru: 'Просмотры',    en: 'Views',          value: String(stats.homeViews || 0).padStart(3, '0') },
+    { ru: 'Фото',      en: 'Photos',   value: String(stats.totalPhotos).padStart(3, '0') },
+    { ru: 'Тем',       en: 'Themes',   value: String(stats.totalThemes).padStart(2, '0') },
+    { ru: 'Загружено', en: 'Uploads',  value: String(stats.totalUploads || 0).padStart(3, '0') },
+    { ru: 'Просмотры', en: 'Views',    value: String(stats.homeViews || 0).padStart(3, '0') },
   ];
+
+  const fmt = (n) => (n ?? 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US');
 
   return (
     <div style={{ padding: 'clamp(20px,4vw,40px) clamp(16px,3vw,24px) 60px' }}>
@@ -76,18 +101,48 @@ export default function AdminDashboard() {
         <L ru="Добро пожаловать в панель управления." en="Welcome to the dashboard." />
       </div>
 
-      {/* Stats */}
+      {/* Library stats */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 1, background: 'var(--faint)',
-        border: '1px solid var(--faint)',
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 1, background: 'var(--faint)', border: '1px solid var(--faint)',
         marginBottom: 40,
       }}>
         {statCards.map((s, i) => (
-          <StatCard key={i} label={<L ru={s.ru} en={s.en} />} value={s.value} delta={s.delta} />
+          <StatCard key={i} label={<L ru={s.ru} en={s.en} />} value={s.value} />
         ))}
       </div>
+
+      {/* Analytics */}
+      {analytics && (
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 style={{ ...T.h1, fontSize: 'clamp(16px,2.5vw,22px)', margin: 0 }}>
+              <L ru="Посетители · 7 дней" en="Visitors · 7 days" />
+            </h2>
+          </div>
+          <div style={{
+            border: '1px solid var(--faint)', padding: 'clamp(14px,3vw,22px)',
+          }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'var(--faint)', marginBottom: 0 }}>
+              {[
+                { ru: 'Уникальных', en: 'Visitors',  v: analytics.stats?.visitors?.value },
+                { ru: 'Просмотров', en: 'Pageviews', v: analytics.stats?.pageviews?.value },
+                { ru: 'Визитов',    en: 'Sessions',  v: analytics.stats?.visits?.value },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: '14px 18px', background: 'var(--paper)' }}>
+                  <div style={{ ...T.label, color: 'var(--dim)', marginBottom: 8 }}>
+                    <L ru={s.ru} en={s.en} />
+                  </div>
+                  <span style={{ ...T.display, fontSize: 'clamp(22px,3vw,32px)', lineHeight: 1 }}>
+                    {fmt(s.v)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <MiniChart data={analytics.chart} lang={lang} />
+          </div>
+        </div>
+      )}
 
       {/* Quick actions */}
       <h2 style={{ ...T.h1, fontSize: 'clamp(16px,2.5vw,22px)', margin: '0 0 14px' }}>
@@ -134,7 +189,7 @@ export default function AdminDashboard() {
               <div
                 key={p.id}
                 onClick={() => navigate('/admin/photos')}
-                style={{ aspectRatio: '1/1', position: 'relative', overflow: 'hidden', background: 'var(--faint)', cursor: 'pointer' }}
+                style={{ aspectRatio: '1/1', overflow: 'hidden', background: 'var(--faint)', cursor: 'pointer' }}
               >
                 <img src={photoUrl(p, 'thumb')} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>

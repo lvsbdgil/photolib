@@ -326,6 +326,59 @@ app.post('/api/photos/bulk-delete', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Umami analytics proxy ─────────────────────────────────────────────────────
+const UMAMI_URL          = process.env.UMAMI_URL || 'http://umami:3000';
+const UMAMI_SITE_ID      = process.env.UMAMI_SITE_ID;
+const UMAMI_ADMIN_PASS   = process.env.UMAMI_ADMIN_PASSWORD;
+
+let _umamiTok = null, _umamiTokExp = 0;
+async function umamiToken() {
+  if (_umamiTok && Date.now() < _umamiTokExp) return _umamiTok;
+  try {
+    const r = await fetch(`${UMAMI_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: UMAMI_ADMIN_PASS }),
+    });
+    if (!r.ok) return null;
+    const { token } = await r.json();
+    _umamiTok = token;
+    _umamiTokExp = Date.now() + 23 * 3600 * 1000;
+    return token;
+  } catch { return null; }
+}
+
+app.get('/api/config', (_req, res) => {
+  res.json({ umamiSiteId: UMAMI_SITE_ID || null });
+});
+
+app.get('/u/script.js', async (_req, res) => {
+  try {
+    const r = await fetch(`${UMAMI_URL}/script.js`);
+    if (!r.ok) return res.status(503).send('');
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    res.send(await r.text());
+  } catch { res.status(503).send(''); }
+});
+
+app.get('/api/analytics', requireAuth, async (_req, res) => {
+  if (!UMAMI_SITE_ID || !UMAMI_ADMIN_PASS) return res.json(null);
+  const tok = await umamiToken();
+  if (!tok) return res.json(null);
+  const now = Date.now();
+  const startAt = now - 7 * 86400 * 1000;
+  const hdrs = { Authorization: `Bearer ${tok}` };
+  try {
+    const [sRes, pRes] = await Promise.all([
+      fetch(`${UMAMI_URL}/api/websites/${UMAMI_SITE_ID}/stats?startAt=${startAt}&endAt=${now}`, { headers: hdrs }),
+      fetch(`${UMAMI_URL}/api/websites/${UMAMI_SITE_ID}/pageviews?startAt=${startAt}&endAt=${now}&unit=day&timezone=UTC`, { headers: hdrs }),
+    ]);
+    if (sRes.status === 401) { _umamiTok = null; return res.json(null); }
+    const [stats, pv] = await Promise.all([sRes.json(), pRes.json()]);
+    res.json({ stats, chart: pv.pageviews });
+  } catch { res.json(null); }
+});
+
 // ── API: Stats ────────────────────────────────────────────────────────────────
 app.get('/api/stats', (_req, res) => {
   const totalPhotos  = db.prepare('SELECT COUNT(*) as n FROM photos').get().n;
