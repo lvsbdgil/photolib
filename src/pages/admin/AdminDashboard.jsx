@@ -125,9 +125,9 @@ export default function AdminDashboard() {
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'var(--faint)', marginBottom: 0 }}>
               {[
-                { ru: 'Уникальных', en: 'Visitors',  v: analytics.stats?.visitors?.value },
-                { ru: 'Просмотров', en: 'Pageviews', v: analytics.stats?.pageviews?.value },
-                { ru: 'Визитов',    en: 'Sessions',  v: analytics.stats?.visits?.value },
+                { ru: 'Уникальных', en: 'Visitors',  v: analytics.stats?.visitors },
+                { ru: 'Просмотров', en: 'Pageviews', v: analytics.stats?.pageviews },
+                { ru: 'Визитов',    en: 'Sessions',  v: analytics.stats?.visits },
               ].map((s, i) => (
                 <div key={i} style={{ padding: '14px 18px', background: 'var(--paper)' }}>
                   <div style={{ ...T.label, color: 'var(--dim)', marginBottom: 8 }}>
