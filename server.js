@@ -362,7 +362,8 @@ app.get('/u/script.js', async (_req, res) => {
 });
 
 // Forward tracking beacons from the browser to Umami
-app.post('/api/send', async (req, res) => {
+// Umami script derives endpoint from its own src path: /u/script.js → /u/api/send
+app.post('/u/api/send', async (req, res) => {
   try {
     const r = await fetch(`${UMAMI_URL}/api/send`, {
       method: 'POST',
