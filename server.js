@@ -398,7 +398,7 @@ app.get('/api/analytics', requireAuth, async (_req, res) => {
 });
 
 // ── API: Stats ────────────────────────────────────────────────────────────────
-app.get('/api/stats', (_req, res) => {
+app.get('/api/stats', requireAuth, (_req, res) => {
   const totalPhotos  = db.prepare('SELECT COUNT(*) as n FROM photos').get().n;
   const totalThemes  = db.prepare('SELECT COUNT(*) as n FROM themes').get().n;
   const totalUploads = db.prepare("SELECT value FROM stats WHERE key = 'total_uploads'").get()?.value || 0;
