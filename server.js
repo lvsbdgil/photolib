@@ -171,7 +171,13 @@ if (themeCount === 0) {
 
 // ── Uploads ───────────────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
+const originalsDir = path.join(uploadsDir, 'originals');
 fs.mkdirSync(uploadsDir, { recursive: true });
+fs.mkdirSync(originalsDir, { recursive: true });
+
+// Block direct access to originals — they're only for storage.
+app.use('/uploads/originals', (_req, res) => res.status(403).end());
+
 app.use('/uploads', (_req, res, next) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   res.setHeader('Content-Disposition', 'inline');
@@ -257,7 +263,9 @@ app.get('/api/photos', (req, res) => {
   res.json(db.prepare(sql).all(...vals));
 });
 
-const mimeToExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/tiff': 'png' };
+const mimeToExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/tiff': 'tiff' };
+const WEB_MAX_PX = 2400;
+const WEB_QUALITY = 88;
 
 app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (req, res) => {
   const { theme_slug } = req.body;
@@ -265,9 +273,8 @@ app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (re
 
   for (const file of req.files || []) {
     const id = nanoid(10);
-    const isTiff = file.mimetype === 'image/tiff';
-    const ext = mimeToExt[file.mimetype] || 'jpg';
-    const outPath = path.join(uploadsDir, `${id}.${ext}`);
+    const origExt = mimeToExt[file.mimetype] || 'jpg';
+    const origPath = path.join(originalsDir, `${id}.${origExt}`);
     try {
       const meta = await sharp(file.buffer).metadata();
       // EXIF orientations 5-8 swap width/height — record post-display dimensions.
@@ -275,18 +282,17 @@ app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (re
       const width  = needsSwap ? meta.height : meta.width;
       const height = needsSwap ? meta.width  : meta.height;
 
-      let fileSize;
-      if (isTiff) {
-        // TIFF isn't browser-renderable; convert to PNG losslessly with rotation applied.
-        const info = await sharp(file.buffer).rotate().png().toFile(outPath);
-        fileSize = info.size;
-      } else {
-        // Save original bytes — browsers handle EXIF rotation natively for JPEG/WebP/PNG.
-        fs.writeFileSync(outPath, file.buffer);
-        fileSize = file.buffer.length;
-      }
+      // Save original bytes as-is (TIFF stored as-is since it's in originals only).
+      fs.writeFileSync(origPath, file.buffer);
 
-      // Thumbnail is always JPEG for compact size.
+      // Web copy: resized JPEG for fast browser delivery.
+      await sharp(file.buffer)
+        .rotate()
+        .resize({ width: WEB_MAX_PX, height: WEB_MAX_PX, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: WEB_QUALITY })
+        .toFile(path.join(uploadsDir, `${id}.jpg`));
+
+      // Thumbnail.
       await sharp(file.buffer)
         .rotate()
         .resize({ width: 400, height: 400, fit: 'cover' })
@@ -296,7 +302,7 @@ app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (re
       db.prepare(`
         INSERT INTO photos (id, original_name, ext, theme_slug, width, height, file_size)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(id, file.originalname, ext, theme_slug || null, width, height, fileSize);
+      `).run(id, file.originalname, 'jpg', theme_slug || null, width, height, file.buffer.length);
 
       incrementStat('total_uploads');
       results.push(db.prepare('SELECT * FROM photos WHERE id = ?').get(id));
