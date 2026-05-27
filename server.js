@@ -257,33 +257,46 @@ app.get('/api/photos', (req, res) => {
   res.json(db.prepare(sql).all(...vals));
 });
 
+const mimeToExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/tiff': 'png' };
+
 app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (req, res) => {
   const { theme_slug } = req.body;
   const results = [];
 
   for (const file of req.files || []) {
     const id = nanoid(10);
-    const ext = 'jpg';
+    const isTiff = file.mimetype === 'image/tiff';
+    const ext = mimeToExt[file.mimetype] || 'jpg';
+    const outPath = path.join(uploadsDir, `${id}.${ext}`);
     try {
-      // .rotate() with no args auto-applies EXIF orientation so the output is
-      // correctly oriented and the reported dimensions reflect actual display size.
-      const webInfo = await sharp(file.buffer)
-        .rotate()
-        .resize({ width: 1800, height: 1800, fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toFile(path.join(uploadsDir, `${id}.${ext}`));
+      const meta = await sharp(file.buffer).metadata();
+      // EXIF orientations 5-8 swap width/height — record post-display dimensions.
+      const needsSwap = [5, 6, 7, 8].includes(meta.orientation);
+      const width  = needsSwap ? meta.height : meta.width;
+      const height = needsSwap ? meta.width  : meta.height;
 
+      let fileSize;
+      if (isTiff) {
+        // TIFF isn't browser-renderable; convert to PNG losslessly with rotation applied.
+        const info = await sharp(file.buffer).rotate().png().toFile(outPath);
+        fileSize = info.size;
+      } else {
+        // Save original bytes — browsers handle EXIF rotation natively for JPEG/WebP/PNG.
+        fs.writeFileSync(outPath, file.buffer);
+        fileSize = file.buffer.length;
+      }
+
+      // Thumbnail is always JPEG for compact size.
       await sharp(file.buffer)
         .rotate()
         .resize({ width: 400, height: 400, fit: 'cover' })
         .jpeg({ quality: 80 })
-        .toFile(path.join(uploadsDir, `${id}-thumb.${ext}`));
+        .toFile(path.join(uploadsDir, `${id}-thumb.jpg`));
 
-      // Store post-rotation dimensions — these match what the browser renders.
       db.prepare(`
         INSERT INTO photos (id, original_name, ext, theme_slug, width, height, file_size)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(id, file.originalname, ext, theme_slug || null, webInfo.width, webInfo.height, file.size);
+      `).run(id, file.originalname, ext, theme_slug || null, width, height, fileSize);
 
       incrementStat('total_uploads');
       results.push(db.prepare('SELECT * FROM photos WHERE id = ?').get(id));

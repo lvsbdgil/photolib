@@ -70,7 +70,7 @@ export const trackEvent = (event) =>
 export function photoUrl(photo, size = 'web') {
   if (!photo) return null;
   return size === 'thumb'
-    ? `/uploads/${photo.id}-thumb.${photo.ext}`
+    ? `/uploads/${photo.id}-thumb.jpg`
     : `/uploads/${photo.id}.${photo.ext}`;
 }
 
