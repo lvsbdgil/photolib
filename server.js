@@ -266,6 +266,8 @@ app.get('/api/photos', (req, res) => {
 const mimeToExt = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/tiff': 'tiff' };
 const WEB_MAX_PX = 2400;
 const WEB_QUALITY = 88;
+const HD_MAX_PX   = 3200;
+const HD_QUALITY  = 90;
 
 app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (req, res) => {
   const { theme_slug } = req.body;
@@ -285,12 +287,19 @@ app.post('/api/photos/upload', requireAuth, upload.array('files', 20), async (re
       // Save original bytes as-is (TIFF stored as-is since it's in originals only).
       fs.writeFileSync(origPath, file.buffer);
 
-      // Web copy: resized JPEG for fast browser delivery.
+      // Web copy (mobile): smaller JPEG for fast delivery.
       await sharp(file.buffer)
         .rotate()
         .resize({ width: WEB_MAX_PX, height: WEB_MAX_PX, fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: WEB_QUALITY })
         .toFile(path.join(uploadsDir, `${id}.jpg`));
+
+      // HD copy (desktop): high-quality JPEG for large screens.
+      await sharp(file.buffer)
+        .rotate()
+        .resize({ width: HD_MAX_PX, height: HD_MAX_PX, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: HD_QUALITY })
+        .toFile(path.join(uploadsDir, `${id}-hd.jpg`));
 
       // Thumbnail.
       await sharp(file.buffer)
@@ -319,12 +328,22 @@ app.patch('/api/photos/:id', requireAuth, (req, res) => {
   res.json(db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id));
 });
 
+function deletePhotoFiles(id) {
+  for (const f of [`${id}.jpg`, `${id}-hd.jpg`, `${id}-thumb.jpg`]) {
+    try { fs.unlinkSync(path.join(uploadsDir, f)); } catch {}
+  }
+  // Clean up original (any extension).
+  try {
+    for (const f of fs.readdirSync(originalsDir)) {
+      if (f.startsWith(id + '.')) fs.unlinkSync(path.join(originalsDir, f));
+    }
+  } catch {}
+}
+
 app.delete('/api/photos/:id', requireAuth, (req, res) => {
   const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id);
   if (photo) {
-    for (const f of [`${photo.id}.${photo.ext}`, `${photo.id}-thumb.${photo.ext}`]) {
-      try { fs.unlinkSync(path.join(uploadsDir, f)); } catch {}
-    }
+    deletePhotoFiles(photo.id);
     db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
   }
   res.json({ ok: true });
@@ -336,9 +355,7 @@ app.post('/api/photos/bulk-delete', requireAuth, (req, res) => {
   for (const id of ids) {
     const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(id);
     if (photo) {
-      for (const f of [`${photo.id}.${photo.ext}`, `${photo.id}-thumb.${photo.ext}`]) {
-        try { fs.unlinkSync(path.join(uploadsDir, f)); } catch {}
-      }
+      deletePhotoFiles(photo.id);
       db.prepare('DELETE FROM photos WHERE id = ?').run(id);
     }
   }

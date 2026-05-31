@@ -76,7 +76,7 @@ export default function Lightbox({ photos, index, theme, onClose, onIndex }) {
       }}>
         <img
           key={photo.id}
-          src={photoUrl(photo)}
+          src={photoUrl(photo, isMobile ? 'web' : 'hd')}
           alt=""
           style={{
             maxWidth: '100%', maxHeight: '100%',

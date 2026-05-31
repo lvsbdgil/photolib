@@ -69,9 +69,9 @@ export const trackEvent = (event) =>
 // ── Helpers ───────────────────────────────────────────────────────────────────
 export function photoUrl(photo, size = 'web') {
   if (!photo) return null;
-  return size === 'thumb'
-    ? `/uploads/${photo.id}-thumb.jpg`
-    : `/uploads/${photo.id}.${photo.ext}`;
+  if (size === 'thumb') return `/uploads/${photo.id}-thumb.jpg`;
+  if (size === 'hd')    return `/uploads/${photo.id}-hd.jpg`;
+  return `/uploads/${photo.id}.${photo.ext}`;
 }
 
 export function photoAspect(photo) {

@@ -100,7 +100,7 @@ export default function Home({ toggleLang, toggleDark, dark }) {
       {/* Photo */}
       <img
         key={photo.id}
-        src={photoUrl(photo)}
+        src={photoUrl(photo, isMobile ? 'web' : 'hd')}
         alt=""
         onLoad={() => setLoaded(true)}
         style={{
